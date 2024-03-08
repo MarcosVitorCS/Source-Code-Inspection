@@ -1,18 +1,12 @@
-package br.calebe.ticketmachine.core;
-
-import br.calebe.ticketmachine.exception.PapelMoedaInvalidaException;
-import br.calebe.ticketmachine.exception.SaldoInsuficienteException;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
-/**
- *
- * @author Calebe de Paula Bianchini
- */
 public class TicketMachine {
 
     protected int valor;
     protected int saldo;
-    protected int[] papelMoeda = {2, 5, 10, 20, 50, 100};
+    protected int[] papelMoeda = {100, 50, 20, 10, 5, 2}; // Ordenando em ordem decrescente
 
     public TicketMachine(int valor) {
         this.valor = valor;
@@ -20,14 +14,17 @@ public class TicketMachine {
     }
 
     public void inserir(int quantia) throws PapelMoedaInvalidaException {
+        if (quantia <= 0) {
+            throw new PapelMoedaInvalidaException("Quantia inválida");
+        }
         boolean achou = false;
         for (int i = 0; i < papelMoeda.length && !achou; i++) {
-            if (papelMoeda[1] == quantia) {
+            if (papelMoeda[i] == quantia) {
                 achou = true;
             }
         }
         if (!achou) {
-            throw new PapelMoedaInvalidaException();
+            throw new PapelMoedaInvalidaException("Papel moeda inválido: " + quantia);
         }
         this.saldo += quantia;
     }
@@ -37,16 +34,33 @@ public class TicketMachine {
     }
 
     public Iterator<Integer> getTroco() {
-        return null;
+        List<Integer> troco = new ArrayList<>();
+        int valorTroco = saldo - valor;
+        for (int i = 0; i < papelMoeda.length; i++) {
+            while (valorTroco >= papelMoeda[i]) {
+                troco.add(papelMoeda[i]);
+                valorTroco -= papelMoeda[i];
+            }
+        }
+        return troco.iterator();
     }
 
     public String imprimir() throws SaldoInsuficienteException {
         if (saldo < valor) {
-            throw new SaldoInsuficienteException();
+            throw new SaldoInsuficienteException("Saldo insuficiente para imprimir");
         }
-        String result = "*****************\n";
-        result += "*** R$ " + saldo + ",00 ****\n";
-        result += "*****************\n";
-        return result;
+        int troco = saldo - valor;
+        this.saldo -= valor; // Deduz o valor do ticket do saldo
+        StringBuilder result = new StringBuilder("*****************\n");
+        result.append("*** R$ ").append(saldo).append(",00 ****\n");
+        result.append("*****************\n");
+        if (troco > 0) {
+            result.append("Troco:\n");
+            Iterator<Integer> iterator = getTroco();
+            while (iterator.hasNext()) {
+                result.append(iterator.next()).append("\n");
+            }
+        }
+        return result.toString();
     }
 }
